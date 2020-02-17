@@ -37,4 +37,10 @@ public class LogAspect {
 				"\nThrows:" + ex.getMessage());
 	}
 
+	public void around(GPJoinPoint joinPoint) {
+		log.info("Invoker Around Method!!!" +
+				"\nTargetObject:" + joinPoint.getThis() +
+				"\nArgs:" + Arrays.toString(joinPoint.getArguments()));
+	}
+
 }

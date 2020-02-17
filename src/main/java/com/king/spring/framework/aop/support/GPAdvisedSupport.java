@@ -2,6 +2,7 @@ package com.king.spring.framework.aop.support;
 
 import com.king.spring.framework.aop.aspect.GPAfterReturningAdviceInterceptor;
 import com.king.spring.framework.aop.aspect.GPAfterThrowingAdviceInterceptor;
+import com.king.spring.framework.aop.aspect.GPMethodAroundAdviceInterceptor;
 import com.king.spring.framework.aop.aspect.GPMethodBeforeAdviceInterceptor;
 import com.king.spring.framework.aop.config.GPAopConfig;
 
@@ -96,6 +97,11 @@ public class GPAdvisedSupport {
 					if (!(null == config.getAspectAfter() || "".equals(config.getAspectAfter()))) {
 						//创建一个Advivce
 						advices.add(new GPAfterReturningAdviceInterceptor(aspectMethods.get(config.getAspectAfter()), aspectClass.newInstance()));
+					}
+					//around 环绕通知
+					if (!(null == config.getAspectAround() || "".equals(config.getAspectAround()))) {
+						//创建一个Advivce
+						advices.add(new GPMethodAroundAdviceInterceptor(aspectMethods.get(config.getAspectAround()), aspectClass.newInstance()));
 					}
 					//afterThrowing 异常通知
 					if (!(null == config.getAspectAfterThrow() || "".equals(config.getAspectAfterThrow()))) {
