@@ -3,6 +3,11 @@ package com.king.spring.framework.context;
 import com.king.spring.framework.annotation.GPAutowired;
 import com.king.spring.framework.annotation.GPController;
 import com.king.spring.framework.annotation.GPService;
+import com.king.spring.framework.aop.GPAopProxy;
+import com.king.spring.framework.aop.GPCglibAopProxy;
+import com.king.spring.framework.aop.GPJdkDynamicAopProxy;
+import com.king.spring.framework.aop.config.GPAopConfig;
+import com.king.spring.framework.aop.support.GPAdvisedSupport;
 import com.king.spring.framework.beans.GPBeanWrapper;
 import com.king.spring.framework.beans.config.GPBeanDefinition;
 import com.king.spring.framework.beans.config.GPBeanPostProcessor;
@@ -142,12 +147,12 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
 	 * 实例化 bean
 	 *
 	 * @param beanName
-	 * @param gpBeanDefinition
+	 * @param beanDefinition
 	 * @return
 	 */
-	private Object instantiateBean(String beanName, GPBeanDefinition gpBeanDefinition) {
+	private Object instantiateBean(String beanName, GPBeanDefinition beanDefinition) {
 		//1、拿到要实例化的对象的类名
-		String className = gpBeanDefinition.getBeanClassName();
+		String className = beanDefinition.getBeanClassName();
 
 		//2、反射实例化，得到一个对象
 		Object instance = null;
@@ -159,14 +164,54 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
 			} else {
 				Class<?> clazz = Class.forName(className);
 				instance = clazz.newInstance();
+
+				//实例化配置文件中的 aop 相关配置
+				GPAdvisedSupport config = instantionAopConfig(beanDefinition);
+				config.setTargetClass(clazz);
+				config.setTarget(instance);
+
+				//符合PointCut的规则的话，创建代理对象
+				if(config.pointCutMatch()) {
+					instance = createProxy(config).getProxy();
+				}
 				this.singletonObjects.put(className, instance);
-				this.singletonObjects.put(gpBeanDefinition.getFactoryBeanName(), instance);
+				this.singletonObjects.put(beanDefinition.getFactoryBeanName(), instance);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		return instance;
+	}
+
+	/**
+	 * 创建aop 动态代理对象
+	 * @param config
+	 * @return
+	 */
+	private GPAopProxy createProxy(GPAdvisedSupport config) {
+		Class targetClass = config.getTargetClass();
+		//如果存在接口数量，则使用 JDK 动态代理，否则使用 cglib 代理
+		if(targetClass.getInterfaces().length > 0){
+			return new GPJdkDynamicAopProxy(config);
+		}
+		return new GPCglibAopProxy(config);
+	}
+
+	/**
+	 * 实例化 aop 相关配置
+	 * @param beanDefinition
+	 * @return
+	 */
+	private GPAdvisedSupport instantionAopConfig(GPBeanDefinition beanDefinition) {
+		GPAopConfig config = new GPAopConfig();
+		config.setPointCut(this.reader.getConfig().getProperty("pointCut"));
+		config.setAspectClass(this.reader.getConfig().getProperty("aspectClass"));
+		config.setAspectBefore(this.reader.getConfig().getProperty("aspectBefore"));
+		config.setAspectAfter(this.reader.getConfig().getProperty("aspectAfter"));
+		config.setAspectAfterThrow(this.reader.getConfig().getProperty("aspectAfterThrow"));
+		config.setAspectAfterThrowingName(this.reader.getConfig().getProperty("aspectAfterThrowingName"));
+		return new GPAdvisedSupport(config);
 	}
 
 	@Override
