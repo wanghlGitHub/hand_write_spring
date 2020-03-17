@@ -77,6 +77,7 @@ public class MethodInvocation implements JoinPoint {
 		return this.method;
 	}
 
+	@Override
 	public void setUserAttribute(String key, Object value) {
 		if (value != null) {
 			if (this.userAttributes == null) {
@@ -91,6 +92,7 @@ public class MethodInvocation implements JoinPoint {
 	}
 
 
+	@Override
 	public Object getUserAttribute(String key) {
 		return (this.userAttributes != null ? this.userAttributes.get(key) : null);
 	}
